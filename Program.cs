@@ -1,11 +1,14 @@
 ﻿using System.Net.Http;
-using System.Text.Json;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using Utf8Json;
+using Utf8Json.Resolvers;
 
 namespace GetNuGetVer
 {
     class VersionsResponse
     {
+        [DataMember(Name = "versions")]
         public string[] Versions { get; set; }
     }
 
@@ -19,8 +22,9 @@ namespace GetNuGetVer
             var response = await httpClient.GetAsync(url);
             var versionsResponseBytes = await response.Content.ReadAsByteArrayAsync();
 
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var versionsResponse = JsonSerializer.Deserialize<VersionsResponse>(versionsResponseBytes, options);
+            // default serializer change to allow private/exclude null/snake_case serializer.
+            JsonSerializer.SetDefaultResolver(StandardResolver.AllowPrivateExcludeNullSnakeCase);
+            var versionsResponse = JsonSerializer.Deserialize<VersionsResponse>(versionsResponseBytes);
 
             var lastVersion = versionsResponse.Versions[^1]; //(length-1)
             // and so on ..
